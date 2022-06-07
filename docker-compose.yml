@@ -1,0 +1,86 @@
+version: '3'
+services:
+  web:
+    build:
+      context: './'
+      # args:
+      #   php_version: ${PHP}
+    ports:
+      - "8001:80"
+      - "9000:9000"
+    environment:
+      - SERVERNAME=localhost
+      - SERVERALIAS=localhost *.localhost
+      - DOCUMENTROOT=htdocs
+    volumes:
+      - /home/user/Desktop/dockerv3/public_html/:/var/www/html/
+      - /home/user/Desktop/dockerv3/.ssh/:/var/www/.ssh/
+    links:
+      - database:mysql
+      - mailhog
+      - solr
+      - redis
+      - tika
+    tty: true
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "127.0.0.1:24224"
+
+  logs:
+    image: actency/docker-es-fluentd-kibana
+    ports:
+      - "8000:5601" # browse this port to see the logs in kibana
+      - "9200:9200"
+      - "9300:9300"
+      - "24224:24224"
+
+  database:
+    image: actency/docker-mysql:5.7
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysqlroot
+      - MYSQL_DATABASE=example
+      - MYSQL_USER=example_user
+      - MYSQL_PASSWORD=mysqlpwd
+
+  phpmyadmin:
+    image: actency/docker-phpmyadmin
+    ports:
+      - "8010:80"
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysqlroot
+      - UPLOAD_SIZE=1G
+    links:
+      - database:mysql
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  solr:
+    image: actency/docker-solr:6.2
+    ports:
+      - "8080:8983"
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379"
+
+  phpredisadmin:
+    image: actency/docker-phpredisadmin
+    ports:
+      - "9900:80"
+    environment:
+      - REDIS_1_HOST=redis
+    links:
+      - redis
+
+  tika:
+    image: actency/docker-tika-server
+    ports:
+      - "9998:9998"
